@@ -8,11 +8,18 @@
     <div id=gameText style="-moz-user-select: -moz-none; -khtml-user-select: none; -webkit-user-select: none; -ms-user-select: none; user-select: none;"></div>
 
 <script>
+    var DEBUG_MODE = false;
     var cornerText = ["&#9562", "&#9556","&#9559","&#9565"];
     var boardHeight = 36, boardWidth = 80;
-    var gameBoard = genRandomBoard(boardHeight, boardWidth);
-    writeBoard(gameBoard);
+    var gameBoard;
     
+    init();
+    
+    function init(){
+        gameBoard = genRandomBoard(boardHeight, boardWidth);
+        writeBoard(gameBoard);
+    }
+        
     function boardToString(arr){
         var lr = boardHeight, lc = boardWidth;
         var output = "";
@@ -49,7 +56,7 @@
     function charClicked(r, c){
         //if(neighbors.length==0){
             neighbors = [[r,c]];
-            gameLoop = setInterval(chainReact, 250);
+            gameLoop = setInterval(chainReact, 100);
         //}
     }
     
@@ -91,6 +98,9 @@
                 }
             }
         }
+        if(DEBUG_MODE){
+            console.log(JSON.stringify(out));
+        }
         return removeDuplicates(out);
     }
     
@@ -100,7 +110,7 @@
 
         for (var i=0;i<len;i++) {
             var flag = true;
-            for (var j=i+1; j<len; j++) {
+            for (var j=i+1; j<len && flag; j++) {
                 if (JSON.stringify(arr[i]) == JSON.stringify(arr[j])){
                     flag = false;
                 }
@@ -109,10 +119,11 @@
                 out.push(arr[i]);
             }
         }
-
+        if(DEBUG_MODE){
+            console.log(JSON.stringify(out));
+        }
         return out;
     }
-
 </script>
 
 </body>
