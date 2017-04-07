@@ -5,12 +5,16 @@
 <title>Chain Reaction</title>
 <body>
 <!-- HTML ELEMENTS HERE -->
+    <div id=gameText class=boardDisp></div>
     <div id="scoreDisplayDiv">
+        <br>
         Highest Score: <span id="highScoreText">0</span> <br>
-        Current Score: <span id="scoreText">0</span> <br> <br>
+        Current Score: <span id="scoreText">0</span> <br>
     </div>
-    <div id=gameText style="-moz-user-select: -moz-none; -khtml-user-select: none; -webkit-user-select: none; -ms-user-select: none; user-select: none;"></div>
-
+    <div id="controls">
+        <button type="button" onClick="init()">Reset the board</button> <br>
+        <br>
+    </div>
 <script>
     var DEBUG_MODE = false;
     var cornerText = ["&#9562", "&#9556","&#9559","&#9565"];
@@ -22,8 +26,10 @@
     init();
     
     function init(){
-        gameBoard = genRandomBoard(boardHeight, boardWidth);
-        writeBoard(gameBoard);
+        if(!gameLoop){
+            gameBoard = genRandomBoard(boardHeight, boardWidth);
+            writeBoard(gameBoard);
+        }
     }
         
     function boardToString(arr){
@@ -146,6 +152,15 @@
         return out;
     }
 </script>
-
+<style>
+    .boardDisp {
+        -moz-user-select: -moz-none;
+        -khtml-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        font-family: "Courier New", Courier, monospace;
+    }
+</style>
 </body>
 </html>
