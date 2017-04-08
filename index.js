@@ -9,6 +9,8 @@ var score = 0;
 
 
 function pageLoad() {
+    highScore = getScoreCookie();
+    document.getElementById("highScoreText").textContent = highScore;
     resetBoard();
 }
 
@@ -16,6 +18,14 @@ function resetBoard(){
     if(!gameLoop){
         gameBoard = genRandomBoard(boardHeight, boardWidth);
         document.getElementById("gameText").innerHTML = boardToHTML(gameBoard);
+    }
+}
+
+function resetScore(){
+    if (confirm("Are you sure you want to reset your high score?") == true) {
+        highScore = 0;
+        document.getElementById("highScoreText").textContent = highScore;
+        setScoreCookie();
     }
 }
 
@@ -71,6 +81,7 @@ function chainReact(){
         if(score>highScore){
             highScore=score;
             document.getElementById("highScoreText").textContent = highScore;
+            setScoreCookie();
         }
         score = 0;
     }
