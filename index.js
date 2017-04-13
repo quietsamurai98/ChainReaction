@@ -6,10 +6,13 @@ var neighbors = [];
 var gameLoop = false;
 var highScore = 0;
 var score = 0;
+var serverHighScore = 0;
 
 
 function pageLoad() {
     highScore = getScoreCookie();
+    getServerScore();
+    document.getElementById("serverHighScoreText").textContent = serverHighScore;
     document.getElementById("highScoreText").textContent = highScore;
     resetBoard();
 }
@@ -82,6 +85,7 @@ function chainReact(){
             highScore=score;
             document.getElementById("highScoreText").textContent = highScore;
             setScoreCookie();
+            setServerScore();
         }
         score = 0;
     }
@@ -159,4 +163,26 @@ function getScoreCookie() {
         }
     }
     return 0;
+}
+
+function setServerScore() {
+    getServerScore();
+    if(highScore>serverHighScore){
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("GET", "updateHighScore.php?q=" + highScore, true);
+        xmlhttp.send();
+        getServerScore();
+    }
+}
+
+function getServerScore() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            serverHighScore = this.responseText | 0;
+            document.getElementById("serverHighScoreText").textContent = serverHighScore;
+        }
+    };
+    xhttp.open("GET", "highScore.txt", true);
+    xhttp.send();
 }
