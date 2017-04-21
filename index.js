@@ -5,16 +5,26 @@ var gameBoard;
 var neighbors = [];
 var gameLoop = false;
 var highScore = 0;
-var score = 0;
-var serverHighScore = 0;
+var serverScore = false;
 
 
 function pageLoad() {
     highScore = getScoreCookie();
-    getServerScore();
-    document.getElementById("serverHighScoreText").textContent = serverHighScore;
+    setupScoreStream();
     document.getElementById("highScoreText").textContent = highScore;
     resetBoard();
+}
+
+function setupScoreStream() {
+    if(typeof(EventSource) !== "undefined") {
+        var source = new EventSource("getHighScore.php");
+        source.onmessage = function(event) {
+            document.getElementById("serverHighScoreText").textContent = event.data;
+            serverScore = event.data | 0;
+        };
+    } else {
+        document.getElementById("serverHighScoreText").textContent = "Not available on this browser";
+    }
 }
 
 function resetBoard(){
@@ -31,6 +41,10 @@ function resetScore(){
         setScoreCookie();
     }
 }
+
+function setScoreCookie() {
+    document.cookie = "highScore=" + highScore + "; expires=Tue, 19 Jan 2038 03:14:07 UTC";
+};
 
 function boardToHTML(arr){
     var lr = boardHeight, lc = boardWidth;
@@ -59,94 +73,8 @@ function genRandomBoard(lr, lc){
 }
 
 function charClicked(r, c){
-    if(neighbors.length==0){
-        neighbors = [[r,c]];
-        gameLoop = setInterval(chainReact, 100);
-    }
-}
-
-function changeCell(r, c){
-    gameBoard[r][c] = (gameBoard[r][c]+1) % 4;
-    document.getElementById(r + "," + c).innerHTML = cornerText[gameBoard[r][c]];
-    score++;
-}
-
-function chainReact(){
-    if(neighbors.length>0){
-        for(var n = 0, l = neighbors.length; n<l; n++){
-            changeCell(neighbors[n][0],neighbors[n][1]);
-        }
-        neighbors = getNeighbors(neighbors, gameBoard);
-        document.getElementById("scoreText").textContent = score;
-    } else {
-        clearInterval(gameLoop);
-        gameLoop = false;
-        if(score>highScore){
-            highScore=score;
-            document.getElementById("highScoreText").textContent = highScore;
-            setScoreCookie();
-            setServerScore();
-        }
-        score = 0;
-    }
-}
-
-function getNeighbors(parents, arr){
-    var out = [];
-    var h = arr.length, w = arr[0].length;
-    for(var n = 0, l = parents.length; n<l; n++){
-        var r = parents[n][0], c = parents[n][1];
-        if(r-1>=0){
-            if(arr[r][c] % 3 == 0 && arr[r-1][c] % 3 != 0){
-                out.push([r-1,c]);
-            }
-        }
-        if(c-1>=0){
-            if(arr[r][c] >= 2 && arr[r][c-1] <= 1){
-                out.push([r,c-1]);
-            }
-        }
-        if(r+1<h){
-            if(arr[r][c] % 3 != 0 && arr[r+1][c] % 3 == 0){
-                out.push([r+1,c]);
-            }
-        }
-        if(c+1<w){
-            if(arr[r][c] <= 1 && arr[r][c+1] >= 2){
-                out.push([r,c+1]);
-            }
-        }
-    }
-    return removeDuplicates(out);
-}
-
-/**
- * Removes duplicate values from an array
- *    have the same resulting string
- */
-function removeDuplicates(arr) {
-    var len=arr.length;
-    var out=[];
-    var strings = [];
-    for(var i = 0; i<len; i++){
-        strings.push(JSON.stringify(arr[i]));
-    }
-    for (var i=0;i<len;i++) {
-        var flag = true;
-        for (var j=i+1; j<len && flag; j++) {
-            if (strings[i] == strings[j]){
-                flag = false;
-            }
-        }
-        if (flag){
-            out.push(arr[i]);
-        }
-    }
-    return out;
-}
-
-function setScoreCookie() {
-    document.cookie = "highScore=" + highScore + "; expires=Tue, 19 Jan 2038 03:14:07 UTC";
+    var newGame = new GameWorker();
+    newGame.startReaction(r, c);
 }
 
 function getScoreCookie() {
@@ -165,24 +93,130 @@ function getScoreCookie() {
     return 0;
 }
 
-function setServerScore() {
-    getServerScore();
-    if(highScore>serverHighScore){
-        var xmlhttp = new XMLHttpRequest();
-        xmlhttp.open("GET", "updateHighScore.php?q=" + highScore, true);
-        xmlhttp.send();
-        getServerScore();
+function implodeBoard(inputBoard) {
+    var boardStr = "";
+    for(var r=0; r<inputBoard.length; r++){
+        var rowStr = "";
+        for(var c = 0; c < inputBoard[0].length; c++){
+            rowStr += inputBoard[r][c] + ",";
+        }
+        boardStr += rowStr.substring(0, rowStr.length-1) + "."; //Remove extrenuous comma, add period seperator
     }
+    boardStr = boardStr.substring(0, boardStr.length-1); //Remove extrenuous period
+    return boardStr;
 }
 
-function getServerScore() {
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-            serverHighScore = this.responseText | 0;
-            document.getElementById("serverHighScoreText").textContent = serverHighScore;
+var GameWorker = function (){
+    var score = 0;
+    var boardStr;
+    var inputRow;
+    var inputCol;
+    
+    var changeCell = function(r, c){
+        gameBoard[r][c] = (gameBoard[r][c]+1) % 4;
+        document.getElementById(r + "," + c).innerHTML = cornerText[gameBoard[r][c]];
+        score++;
+    };
+
+    var chainReact = function(){
+        if(neighbors.length>0){
+            for(var n = 0, l = neighbors.length; n<l; n++){
+                changeCell(neighbors[n][0],neighbors[n][1]);
+            }
+            neighbors = getNeighbors(neighbors, gameBoard);
+            document.getElementById("scoreText").textContent = score;
+            if(score>highScore){
+                highScore=score;
+                document.getElementById("highScoreText").textContent = highScore;
+                setScoreCookie();
+            }
+        } else {
+            clearInterval(gameLoop);
+            gameLoop = false;
+            if(serverScore){
+                sendGame(boardStr, inputRow, inputCol);
+            }
         }
     };
-    xhttp.open("GET", "highScore.txt", true);
-    xhttp.send();
+
+    var getNeighbors = function(parents, arr){
+        var out = [];
+        var h = arr.length, w = arr[0].length;
+        for(var n = 0, l = parents.length; n<l; n++){
+            var r = parents[n][0], c = parents[n][1];
+            if(r-1>=0){
+                if(arr[r][c] % 3 == 0 && arr[r-1][c] % 3 != 0){
+                    out.push([r-1,c]);
+                }
+            }
+            if(c-1>=0){
+                if(arr[r][c] >= 2 && arr[r][c-1] <= 1){
+                    out.push([r,c-1]);
+                }
+            }
+            if(r+1<h){
+                if(arr[r][c] % 3 != 0 && arr[r+1][c] % 3 == 0){
+                    out.push([r+1,c]);
+                }
+            }
+            if(c+1<w){
+                if(arr[r][c] <= 1 && arr[r][c+1] >= 2){
+                    out.push([r,c+1]);
+                }
+            }
+        }
+        return removeDuplicates(out);
+    };
+
+    /**
+     * Removes duplicate values from an array
+     *    have the same resulting string
+     */
+    var removeDuplicates = function(arr) {
+        var len=arr.length;
+        var out=[];
+        var strings = [];
+        for(var i = 0; i<len; i++){
+            strings.push(JSON.stringify(arr[i]));
+        }
+        for (var i=0;i<len;i++) {
+            var flag = true;
+            for (var j=i+1; j<len && flag; j++) {
+                if (strings[i] == strings[j]){
+                    flag = false;
+                }
+            }
+            if (flag){
+                out.push(arr[i]);
+            }
+        }
+        return out;
+    };
+    
+    var sendGame = function(board, row, col){
+        //Calculate score on the server, and log that score in the database
+        var http = new XMLHttpRequest();
+        var url = "playGame.php";
+        var params = "board=" + board + "&row=" + row + "&col=" + col;
+        http.open("POST", url, true);
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+        http.onreadystatechange = function() {
+            if(http.readyState == 4 && http.status == 200) {
+                console.log(http.responseText);
+            }
+        }
+        http.send(params);
+    }
+    
+    var self = this;
+    self.startReaction = function(r, c){
+        if(!gameLoop){
+            inputRow=r;
+            inputCol=c;
+            boardStr=implodeBoard(gameBoard)
+            neighbors = [[r,c]];
+            gameLoop = setInterval(chainReact, 100);
+        }
+    };
 }
