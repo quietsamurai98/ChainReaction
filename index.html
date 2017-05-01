@@ -1,35 +1,61 @@
 <!DOCTYPE html>
 <html>
 
-<meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<head>
+<head><meta http-equiv="Content-Type" content="text/html; charset=euc-kr">
     <title>Chain Reaction</title>
     <link rel="stylesheet" type="text/css" href="index.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script src="/js/googleanalytics.js" id="src"></script>
 </head>
 
 <body onLoad="pageLoad()">
 <!-- HTML ELEMENTS HERE -->
-    <div id=gameText class=boardDisp></div>
-    <div id="scoreDisplayDiv">
+    <div id="hideoverflow"><div id="gameTextContainer"><div id=gameText class=boardDisp></div></div></div>
+    <div id="scoreDisplayDiv" style="text-align: center;">
         <br>
-        High Score: <span id="highScoreText">0</span> <br>
-        Score: <span id="scoreText">0</span> <br>
+        <span id="globalScoreAlign" style="display: inline-block; position: relative;">Global High Score: <span id="serverHighScoreText">0</span></span>
+        <span id="currentScoreAlign" style="display: inline-block; position: relative;">Score: <span id="scoreText">0</span></span>
+        <span id="highScoreAlign" style="display: inline-block; position: relative;">High Score: <span id="highScoreText">0</span></span>
     </div>
-    <div id="controls">
+    <div id="controls" style="text-align: center;">
+        <input type="text" name="username" id="username" maxlength="16" placeholder="Enter name for leaderboard" style="text-align:center"><br>
+        <button id="myBtn">View Leaderboard</button>
         <button type="button" onClick="resetBoard()">Reset the board</button> <br>
         <br>
-    </div>
-    <div id="instructions">
-        How to play: <br>
-        &nbsp;&nbsp;&nbsp;&nbsp;Click on a tile to turn it 90° clockwise. <br>
-        &nbsp;&nbsp;&nbsp;&nbsp;If a turned tile connects with a neighboring tile, the neighboring tile will turn 90° clockwise. <br>
-        &nbsp;&nbsp;&nbsp;&nbsp;You earn one point for each time a tile is turned. <br>
+        Game speed<br> 
+        Fast <input type="range" id="delaySlider" min="1" max="1000" value="100" step="1" /> Slow <br>
         <br>
     </div>
-    <div id="clearScore">
+    <div id="instructions" style="text-align: center;">
+        <b> How to play </b><br><br>
+        Click on a tile to turn it 90 degrees clockwise. <br>
+        If a turned tile connects with a neighboring tile, the neighboring tile will turn 90 degrees clockwise. <br>
+        You earn one point for each time a tile is turned. <br>
+        <br>
+    </div>
+    <div id="clearScore" style="text-align: center;">
+        <br><br><br>
         <button type="button" onClick="resetScore()">Reset high score</button> <br>
-<script src="index.js"></script>
+    </div>
+    <div id="privacyPolicy"> <p><a href="http://canicvs.heliohost.org/PrivacyPolicy.html" target="_blank">Privacy Policy</a></p> </div>
+<!-- Trigger/Open The Modal -->
+
+
+<!-- The Modal -->
+<div id="myModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div id="leaderboardDiv">
+        <p>Loading the Leaderboard...</p>
+    </div>
+  </div>
+
+</div>
+<script src="index.js" id="src"></script>
 </body>
 </html>
