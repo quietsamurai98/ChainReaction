@@ -1,4 +1,5 @@
 var DEBUG_MODE = false;
+var OFFLINE_MODE = false;
 var cornerTextPipes = ["&#9562", "&#9556","&#9559","&#9565"];
 var cornerTextLines = ["&#9495", "&#9487","&#9491","&#9499"];
 var cornerText = cornerTextLines;
@@ -9,65 +10,31 @@ var highScore = 0;
 var serverScore = false;
 var skipNameDialog = false;
 
+function getElem(id){
+    return document.getElementById(id);
+}
 
 function pageLoad() {
     highScore = getScoreCookie();
     logPageHit();
     setupScoreStream();
-    document.getElementById("highScoreText").textContent = highScore;
-    document.getElementById("username").value = getNameCookie();
+    getElem("highScoreText").textContent = highScore;
+    getElem("username").value = getNameCookie();
     resetBoard();
-}
-
-function setupScoreStream() {
-    if(typeof(EventSource) !== "undefined") {
-        var source = new EventSource("getHighScore.php");
-        source.onmessage = function(event) {
-            document.getElementById("serverHighScoreText").textContent = event.data;
-            serverScore = event.data | 0;
-            console.log(event.data);
-        };
-    } else {
-        console.log("Event streams aren't available for your web browser. Consider updating to a modern web browser.")
-        getServerScore();
-        setInterval(getServerScore,30000);
-    }
-}
-
-function getServerScore() {
-    var http = new XMLHttpRequest();
-    var url = "getHighScore.php";
-    var params = "";
-    http.open("GET", url, true);
-    http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-
-    http.onreadystatechange = function() {
-        if(http.readyState == 4 && http.status == 200) {
-            if (isNaN(http.responseText.substring(17))){ 
-                console.log(http.responseText); //responseText should be a string that is a number. If it isnt, responseText is likely an error message
-                serverScore === false;
-            } else {
-                serverScore = parseInt(http.responseText.substring(17));
-                document.getElementById("serverHighScoreText").textContent = serverScore;
-            }
-            
-        }
-    }
-    http.send(params);
 }
 
 function resetBoard(){
     if(!gameLoop){
         gameBoard = genRandomBoard(boardHeight, boardWidth);
         setFontSize();
-        document.getElementById("gameText").innerHTML = boardToHTML(gameBoard);
+        getElem("gameText").innerHTML = boardToHTML(gameBoard);
     }
 }
 
 function resetScore(){
     if (confirm("Are you sure you want to reset your high score?") == true) {
         highScore = 0;
-        document.getElementById("highScoreText").textContent = highScore;
+        getElem("highScoreText").textContent = highScore;
         setScoreCookie();
     }
 }
@@ -98,22 +65,22 @@ window.addEventListener("resize", function(event) {
     setFontSize();
 })
 
-document.getElementById("username").onkeypress = function(e) {
+getElem("username").onkeypress = function(e) {
     var chr = String.fromCharCode(e.which);
     if ("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890".indexOf(chr) < 0){
         return false;
     } else {
-        setNameCookie(document.getElementById("username").value + chr);
+        setNameCookie(getElem("username").value + chr);
     }
 };
 
 function setFontSize(){
     var viewWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
     var fontSize = Math.floor(viewWidth/boardWidth + .5);
-    document.getElementById("gameText").style.fontSize = Math.min(fontSize, 20) +"px";
-    document.getElementById("globalScoreAlign").style.width = Math.floor(viewWidth/3.2)+"px";
-    document.getElementById("currentScoreAlign").style.width = Math.floor(viewWidth/3.2)+"px";
-    document.getElementById("highScoreAlign").style.width = Math.floor(viewWidth/3.2)+"px";
+    getElem("gameText").style.fontSize = Math.min(fontSize, 20) +"px";
+    getElem("globalScoreAlign").style.width = Math.floor(viewWidth/3.2)+"px";
+    getElem("currentScoreAlign").style.width = Math.floor(viewWidth/3.2)+"px";
+    getElem("highScoreAlign").style.width = Math.floor(viewWidth/3.2)+"px";
 }
 
 function genRandomBoard(lr, lc){
@@ -163,20 +130,6 @@ function getNameCookie() {
     }
     return "";
 }
-function logPageHit() {
-    var http = new XMLHttpRequest();
-    var url = "logPageHit.php";
-    var params = "";
-    http.open("POST", url, true);
-    http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-
-    http.onreadystatechange = function() {
-        if(http.readyState == 4 && http.status == 200) {
-            console.log(http.responseText);
-        }
-    }
-    http.send(params);
-}
 
 function implodeBoard(inputBoard) {
     var boardStr = "";
@@ -201,18 +154,18 @@ var GameWorker = function (){
     
     var turnCell = function(r, c){
         gameBoard[r][c] = (gameBoard[r][c]+1) % 4;
-        document.getElementById(r + "," + c).innerHTML = cornerText[gameBoard[r][c]];
-        document.getElementById(r + "," + c).style = "color:blue;";
+        getElem(r + "," + c).innerHTML = cornerText[gameBoard[r][c]];
+        getElem(r + "," + c).style = "color:blue;";
         score++;
     };
     
     var fadeCell = function(r, c){
-        document.getElementById(r + "," + c).style = "color:red;";
+        getElem(r + "," + c).style = "color:red;";
     };
 
     var chainReact = function(){
         if(neighbors.length>0){
-            setTimeout(chainReact,  document.getElementById("delaySlider").value | 0);
+            setTimeout(chainReact,  getElem("delaySlider").value | 0);
             for(var n = 0, l = oldNeighbors.length; n<l; n++){
                 fadeCell(oldNeighbors[n][0],oldNeighbors[n][1]);
             }
@@ -221,10 +174,10 @@ var GameWorker = function (){
             }
             oldNeighbors = JSON.parse(JSON.stringify(neighbors));
             neighbors = getNeighbors(neighbors, gameBoard);
-            document.getElementById("scoreText").textContent = score;
+            getElem("scoreText").textContent = score;
             if(score>highScore){
                 highScore=score;
-                document.getElementById("highScoreText").textContent = highScore;
+                getElem("highScoreText").textContent = highScore;
                 setScoreCookie();
             }
         } else {
@@ -234,7 +187,7 @@ var GameWorker = function (){
                     getServerScore();
                 }
                 if(!(serverScore === false) && score>=1000){
-                    if(document.getElementById("username").value == ""){
+                    if(getElem("username").value == ""){
                         if(!skipNameDialog && confirm("That was a pretty good score! However, since you haven't set a display name, your score can't appear on the leaderboard. Would you like to set your display name now?")){
                             var str = prompt("Enter your display name\n(Alphanumeric characters only)");
                             while(str!="" && /[^a-zA-Z0-9]/.test(str)) {
@@ -244,16 +197,16 @@ var GameWorker = function (){
                                 alert("Your score wasn't logged on the server.\nFeel free to set your display name at any time.");
                                 skipNameDialog = true;
                             } else {
-                                document.getElementById("username").value = str;
+                                getElem("username").value = str;
                                 setScoreCookie(str);
-                                sendGame(boardStr, inputRow, inputCol);
+                                sendGame(score, boardStr, inputRow, inputCol);
                             }
                         } else if(!skipNameDialog) {
                             alert("Your score wasn't logged on the server.\nFeel free to set your display name at any time.");
                             skipNameDialog = true;
                         }
                     } else {
-                        sendGame(boardStr, inputRow, inputCol);
+                        sendGame(score, boardStr, inputRow, inputCol);
                     }
                 } else {
                     if(!(serverScore === false)){
@@ -320,27 +273,10 @@ var GameWorker = function (){
         }
         return out;
     };
-    
-    var sendGame = function(board, row, col){
-        //Calculate score on the server, and log that score in the database
-        var http = new XMLHttpRequest();
-        var url = "playGame.php";
-        var params = "board=" + board + "&row=" + row + "&col=" + col + "&name=" + document.getElementById("username").value;
-        http.open("POST", url, true);
-        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-
-        http.onreadystatechange = function() {
-            if(http.readyState == 4 && http.status == 200) {
-                console.log(http.responseText);
-            }
-        }
-        http.send(params);
-    }
-    
     var self = this;
     self.startReaction = function(r, c){
         if(!gameLoop){
-            document.getElementById("gameText").innerHTML = boardToHTML(gameBoard);
+            getElem("gameText").innerHTML = boardToHTML(gameBoard);
             inputRow=r;
             inputCol=c;
             boardStr=implodeBoard(gameBoard)
@@ -352,46 +288,121 @@ var GameWorker = function (){
     };
 }
 
-// Get the modal
-var modal = document.getElementById('myModal');
-
-// Get the button that opens the modal
-var btn = document.getElementById("myBtn");
-
-// Get the <span> element that closes the modal
-var span = document.getElementsByClassName("close")[0];
-
-// When the user clicks on the button, open the modal 
-btn.onclick = function() {
-    modal.style.display = "block";
-    getLeaderboard();
+function getLeaderboard(){
+    if (OFFLINE_MODE){
+        console.log("getLeaderboard was cancelled. Reason: OFFLINE_MODE === true");
+        return;
+    }
+    
+    ajaxPoster("getLeaderboard.php", "", function(httpObj){
+        var leaderboardDiv = getElem('leaderboardDiv');
+        leaderboardDiv.innerHTML = httpObj.responseText;
+    });
 }
 
-// When the user clicks on <span> (x), close the modal
-span.onclick = function() {
-    modal.style.display = "none";
+function sendGame(score, board, row, col){
+    if (OFFLINE_MODE){
+        console.log("sendGame was cancelled. Reason: OFFLINE_MODE === true");
+        return;
+    }
+    if(score<1000){
+        console.log("Score was not logged on the server. (Reason: score was too low)");
+        return;
+    }
+    var params = "board=" + board + "&row=" + row + "&col=" + col + "&name=" + getElem("username").value;
+    ajaxPoster("playGame.php", params, function(httpObj){
+        console.log(httpObj.responseText);
+    });
 }
 
-// When the user clicks anywhere outside of the modal, close it
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
+function logPageHit() {
+    if (OFFLINE_MODE){
+        console.log("logPageHit was cancelled. Reason: OFFLINE_MODE === true");
+        return;
+    }
+    
+    ajaxPoster("logPageHit.php", "", function(httpObj){
+        console.log(httpObj.responseText);
+    });
+}
+
+function setupScoreStream() {
+    if (OFFLINE_MODE){
+        console.log("setupScoreStream was cancelled. Reason: OFFLINE_MODE === true");
+        return;
+    }
+     
+    if(typeof(EventSource) !== "undefined") {
+        var source = new EventSource("getHighScore.php");
+        source.onmessage = function(event) {
+            getElem("serverHighScoreText").textContent = event.data;
+            serverScore = event.data | 0;
+            console.log(event.data);
+        };
+    } else {
+        console.log("Event streams aren't available for your web browser. Consider updating to a modern web browser.");
+        getServerScore();
+        setInterval(getServerScore,30000);
     }
 }
 
-function getLeaderboard(){
-    var tableStr = "Loading leaderboard from the server...";
-    var http = new XMLHttpRequest();
-        var url = "getLeaderboard.php";
-        var params = "";
-        http.open("POST", url, true);
-        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-
-        http.onreadystatechange = function() {
-            if(http.readyState == 4 && http.status == 200) {
-                var leaderboardDiv = document.getElementById('leaderboardDiv');
-                leaderboardDiv.innerHTML = http.responseText;
-            }
+function getServerScore() {
+    if (OFFLINE_MODE){
+        console.log("getServerScore was cancelled. Reason: OFFLINE_MODE === true");
+        return;
+    }
+    
+    ajaxPoster("getHighScore.php", "", function(httpObj){
+        if (isNaN(httpObj.responseText.substring(17))){
+            console.log(httpObj.responseText); //responseText should be a string that is a number. If it isnt, responseText is likely an error message
+            serverScore === false;
+        } else {
+            serverScore = parseInt(httpObj.responseText.substring(17));
+            getElem("serverHighScoreText").textContent = serverScore;
+            console.log("Server score was manually updated.\nserverScore now has a value of " + serverScore + ".");
         }
-        http.send(params);
+    });
 }
+
+function ajaxPoster(ajaxURL, ajaxParams, readystatechangeFunction){
+    var http = new XMLHttpRequest();
+    var url = ajaxURL;
+    var params = ajaxParams;
+    http.open("POST", url, true);
+    http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+    http.onreadystatechange = function() {
+        if(http.readyState == 4 && http.status == 200) {
+            readystatechangeFunction(http);
+        }
+    }
+    http.send(params);
+}
+//MODAL CODE
+    // Get the modal
+    var modal = getElem('myModal');
+
+    // Get the button that opens the modal
+    var btn = getElem("myBtn");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks on the button, open the modal 
+    btn.onclick = function() {
+        modal.style.display = "block";
+        getLeaderboard();
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+//END MODAL CODE
